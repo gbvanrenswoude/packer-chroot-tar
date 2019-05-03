@@ -1,0 +1,71 @@
+{
+   "_comment": "Default mount_path is /mnt/packer-amazon-chroot-volumes/{{.Device}} which will replace .Device with the name of the device where the volume is attached",
+   "_comment": "Run with sudo -E OWNER=test packer build chroot.json -on-error=ask",
+   "_comment": "The tar file now does not use absolute paths (tar: Removing leading `/' from member names). So extract it in the root dir for it to work! Or run the tar commands with '--absolute-names' appended.",
+   "variables": {
+      "owner": "{{env `OWNER`}}"
+   },
+   "builders": [
+      {
+         "ami_name": "chroot-test",
+         "ena_support": true,
+         "region": "eu-west-1",
+         "tags": {
+            "owner": "{{ user `owner` }}",
+            "packer": "true",
+            "confidentiallity": "1"
+         },
+         "root_volume_tags": {
+            "confidentiallity": "1"
+         },
+         "root_volume_size": "30",
+         "source_ami_filter": {
+            "filters": {
+            "virtualization-type": "hvm",
+            "name": "amzn2-ami-hvm-2.0.*",
+            "root-device-type": "ebs"
+            },
+            "owners": ["111111111111"],
+            "most_recent": true
+          },
+         "sriov_support": true,
+         "snapshot_tags": {
+            "owner": "{{ user `owner` }}",
+            "packer": "true",
+            "purpose": "gg"
+         },
+         "tags": {
+           "owner": "{{ user `owner` }}",
+           "packer": "true",
+           "purpose": "gg"
+         },
+         "type": "amazon-chroot",
+         "post_mount_commands": ["echo {{.Device}} > device.txt","echo {{.MountPath}} > mountpath.txt"]
+      }
+   ],
+   "provisioners": [
+     {
+       "type": "shell",
+       "inline": ["echo provisioning...","echo Test_ami > /tmp/test.txt"]
+     },
+     {
+       "type": "shell",
+       "inline": ["echo tarballing...",
+                  "cat /tmp/test.txt",
+                  "touch /volume.tar.gz",
+                  "tar -cvpzf /volume.tar.gz --exclude=/proc --exclude=/dev --exclude=/sys --exclude=/tmp --exclude=/volume.tar.gz /",
+                  "export http_proxy=http://someproxy:8080",
+                  "export https_proxy=http://someproxy:8080",
+                  "export no_proxy=localhost,corp.domain",
+                  "curl -k -u myUser:myP455w0rd! -X PUT \"https://someartifactory.corp.domain/artifactory/my-repository/my/new/artifact/directory/volume.img.gz\" -T /volume.tar.gz"
+                  ]
+     }
+   ],
+   "post-processors": [
+     {
+       "type": "manifest",
+       "output": "manifest.json",
+       "strip_path": true
+     }
+   ]
+}
