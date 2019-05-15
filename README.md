@@ -8,3 +8,6 @@ From there, pull, untar, ovr disk and create AMI.
 
 Solves large scale mass AMI sharing if encryption is mandatory in all phases of the process.
 (discover an encrypted AMI to begin with)
+
+
+Edit: AWS released encrypted AMI sharing. It has been fun. Keeping this around for edge case purposes.
